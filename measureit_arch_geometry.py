@@ -3362,14 +3362,26 @@ def draw3d_loop(context, objlist, svg=None, extMat=None, multMat=False,custom_ca
         objlist = z_order_objs(objlist, extMat, multMat)
         print(objlist)
 
-    for idx, myobj in enumerate(objlist, start=1):
+    if sceneProps.is_render_draw:
+        startTime = time.time()
+
+    # Draw Instanced Objects
+
+    deps = bpy.context.view_layer.depsgraph
+    
+    objlist = [Inst_Sort(obj_int) for obj_int in deps.object_instances]
+    num_instances = len(objlist) 
+    if sceneProps.vector_z_order and sceneProps.is_vector_draw:
+        objlist = z_order_objs(objlist, extMat, multMat)
+
+    for idx,obj_int in enumerate(objlist, start=1):
         if sceneProps.is_render_draw:
             print("Rendering Object: " + str(idx) + " of: " +
-                  str(totalobjs) + " Name: " + myobj.name)
-            startTime = time.time()
+            str(num_instances) + " Name: " + obj_int.object.name)
 
-        if check_obj_vis(myobj,custom_call):
-            mat = myobj.matrix_world
+        myobj = obj_int.object
+        mat = obj_int.matrix_world
+        if True:#check_obj_vis(myobj,custom_call):
             if extMat is not None:
                 if multMat:
                     mat = extMat @ mat
@@ -3384,18 +3396,18 @@ def draw3d_loop(context, objlist, svg=None, extMat=None, multMat=False,custom_ca
                 draw_sheet_views(context, myobj, sheetGen,
                                  sheet_view, mat, svg=svg)
 
-            if 'LineGenerator' in myobj:
-                lineGen = myobj.LineGenerator
-                if not sceneProps.hide_linework or sceneProps.is_render_draw:
-                    draw_line_group(context, myobj, lineGen, mat, svg=svg)
+            #DRAW LINES
+            lineGen = myobj.LineGenerator
+            if not sceneProps.hide_linework or sceneProps.is_render_draw:
+                draw_line_group(context, myobj, lineGen, mat, svg=svg)
 
-            if 'AnnotationGenerator' in myobj:
-                annotationGen = myobj.AnnotationGenerator
-                draw_annotation(context, myobj, annotationGen, mat, svg=svg, )
+            #DRAW ANNOTATIONS
+            annotationGen = myobj.AnnotationGenerator
+            draw_annotation(context, myobj, annotationGen, mat, svg=svg, )
 
-            if 'DimensionGenerator' in myobj:
+            #DRAW DIMENSIONS
+            if sceneProps.instance_dims or not obj_int.is_instance:
                 DimGen = myobj.DimensionGenerator
-
                 for alignedDim in DimGen.alignedDimensions:
                     draw_alignedDimension(
                         context, myobj, DimGen, alignedDim, svg=svg, )
@@ -3406,7 +3418,7 @@ def draw3d_loop(context, objlist, svg=None, extMat=None, multMat=False,custom_ca
 
                 for axisDim in DimGen.axisDimensions:
                     draw_axisDimension(context, myobj, DimGen,
-                                       axisDim, mat, svg=svg, )
+                                        axisDim, mat, svg=svg, )
 
                 for boundsDim in DimGen.boundsDimensions:
                     draw_boundsDimension(
@@ -3414,60 +3426,15 @@ def draw3d_loop(context, objlist, svg=None, extMat=None, multMat=False,custom_ca
 
                 for arcDim in DimGen.arcDimensions:
                     draw_arcDimension(context, myobj, DimGen,
-                                      arcDim, mat, svg=svg, )
+                                        arcDim, mat, svg=svg, )
 
                 for areaDim in DimGen.areaDimensions:
                     draw_areaDimension(context, myobj, DimGen,
-                                       areaDim, mat, svg=svg, )
+                                        areaDim, mat, svg=svg, )
 
-        if sceneProps.is_render_draw:
-            endTime = time.time()
-            print("Time: " + str(endTime - startTime))
-
-    # Draw Instanced Objects
-    if not custom_call:
-        deps = bpy.context.view_layer.depsgraph
-        
-        objlist = [Inst_Sort(obj_int) for obj_int in deps.object_instances]
-        num_instances = len(objlist) 
-        if sceneProps.vector_z_order and sceneProps.is_vector_draw:
-            objlist = z_order_objs(objlist, extMat, multMat)
-
-        for idx,obj_int in enumerate(objlist, start=1):
-            if obj_int.is_instance:
-                myobj = obj_int.object
-                mat = obj_int.matrix_world
-
-                if sceneProps.is_render_draw:
-                    print("Rendering Instance Object: " + str(idx) + " of: " +
-                        str(num_instances) + " Name: " + myobj.name)
-
-                if sceneProps.is_vector_draw and (myobj.type == 'MESH' or myobj.type =="CURVE"):
-                    draw_material_hatches(context, myobj, mat, svg=svg)                   
-
-                if 'LineGenerator' in myobj:
-                    lineGen = myobj.LineGenerator
-                    draw_line_group(context, myobj, lineGen, mat, svg=svg)
-
-                if 'AnnotationGenerator' in myobj and myobj.AnnotationGenerator.num_annotations != 0:
-                    annotationGen = myobj.AnnotationGenerator
-                    draw_annotation(
-                        context, myobj, annotationGen, mat, svg=svg, instance=obj_int)
-
-                if sceneProps.instance_dims:
-                    if 'DimensionGenerator' in myobj and myobj.DimensionGenerator.measureit_arch_num != 0:
-                        DimGen = myobj.DimensionGenerator
-                        mat = obj_int.matrix_world
-                        for alignedDim in DimGen.alignedDimensions:
-                            draw_alignedDimension(
-                                context, myobj, DimGen, alignedDim, mat=mat, svg=svg)
-                        for angleDim in DimGen.angleDimensions:
-                            draw_angleDimension(
-                                context, myobj, DimGen, angleDim, mat, svg=svg)
-                        for axisDim in DimGen.axisDimensions:
-                            draw_axisDimension(
-                                context, myobj, DimGen, axisDim, mat, svg=svg)
-
+    if sceneProps.is_render_draw:
+        endTime = time.time()
+        print("Time: " + str(endTime - startTime))
 
 def setup_dim_text(myobj,dim,dimProps,dist,origin,distVector,offsetDistance):
     context =bpy.context
