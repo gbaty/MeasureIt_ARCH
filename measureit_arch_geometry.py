@@ -2241,6 +2241,7 @@ def draw_annotation(context, myobj, annotationGen, mat, svg=None, instance = Non
                 p1local = get_mesh_vertex(
                     myobj, annotation.annotationAnchor, annotationProps.evalMods, spline_idx=annotation.annotationAnchorSpline)
                 p1 = get_point(p1local, mat)
+                annotation['p1anchorCoord'] = p1
             except IndexError:
                 deleteFlag = True
 
@@ -2369,9 +2370,9 @@ def draw_annotation(context, myobj, annotationGen, mat, svg=None, instance = Non
 
             for textField in fields:
                 if instance is None:
-                    set_text(textField, myobj,parent = annotationProps)
+                    set_text(textField, myobj, style = annotationProps, item = annotation)
                 else:
-                    set_text(textField,instance.parent,parent = annotationProps)
+                    set_text(textField,instance.parent, style = annotationProps, item = annotation)
                 origin = p3
                 xDir = fullRotMat @ Vector((1 * mult, 0, 0))
                 yDir = fullRotMat @ Vector((0, 1, 0))
@@ -2461,7 +2462,7 @@ def draw_annotation(context, myobj, annotationGen, mat, svg=None, instance = Non
                     svg_shaders.svg_text_shader(
                         annotation, annotationProps, textField.text, origin, textcard, rgb, svg, parent=svg_anno)
 
-def set_text(textField, obj, parent=None):
+def set_text(textField, obj, style=None, item=None):
     
 
     if textField.autoFillText:
@@ -2487,7 +2488,15 @@ def set_text(textField, obj, parent=None):
         elif textField.textSource == 'VIEWNUM':
             view = get_view()
             textField.text = view.view_num
+            
+        
+        elif textField.textSource == 'ELEVATION':
+            if item == None: 
+                textField.text = ""
+            elif "p1anchorCoord" in item:
+                textField.text = format_distance(item['p1anchorCoord'][2])
 
+                
         elif textField.textSource == 'C_LENGTH':
             if obj.type == 'CURVE':
                 if len(obj.data.splines) > 1:
@@ -2498,6 +2507,8 @@ def set_text(textField, obj, parent=None):
                     length = obj.data.splines[0].calc_length()
                     text = format_distance(length)
                 textField.text = text
+            else:
+                textField.text = "Not a Curve"
 
         # CUSTOM PROP
         elif textField.textSource == 'RNAPROP':
@@ -2515,7 +2526,7 @@ def set_text(textField, obj, parent=None):
                     textField.text = 'Bad Data Path'
 
 
-    if parent != None and parent.all_caps and (parent.text_updated or bpy.context.scene.MeasureItArchProps.is_render_draw):
+    if style != None and style.all_caps and (style.text_updated or bpy.context.scene.MeasureItArchProps.is_render_draw):
         textField.text = textField.text.upper()
 
 
@@ -3361,6 +3372,9 @@ def draw3d_loop(context, objlist, svg=None, extMat=None, multMat=False,custom_ca
     if sceneProps.vector_z_order and sceneProps.is_vector_draw:
         objlist = z_order_objs(objlist, extMat, multMat)
         print(objlist)
+    
+    if sceneProps.is_render_draw:
+        startTime = time.time()
 
     if sceneProps.is_render_draw:
         startTime = time.time()
