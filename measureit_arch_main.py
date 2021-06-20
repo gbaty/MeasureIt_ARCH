@@ -31,7 +31,7 @@ from bpy.app.handlers import persistent
 from mathutils import Vector, Matrix
 
 from .measureit_arch_geometry import clear_batches, update_text, draw3d_loop, preview_dual
-from .measureit_arch_utils import get_view, get_rv3d
+from .measureit_arch_utils import get_view, get_rv3d, Inst_Sort
 
 
 @persistent
@@ -410,9 +410,9 @@ def text_update_loop(context, objlist):
     sceneProps = scene.MeasureItArchProps
 
     deps = bpy.context.view_layer.depsgraph
-    objlist = deps.object_instances
+    objlist = [Inst_Sort(obj_int) for obj_int in deps.object_instances]
     for obj_int in objlist:
-        myobj = obj_int.object
+        myobj = obj_int.object.original
         if True:
 
             DimGen = myobj.DimensionGenerator
@@ -495,10 +495,9 @@ def text_update_loop(context, objlist):
 
                 update_text(
                     textobj=annotation, props=annotationProps,
-                    context=context, fields=fields)
+                    context=context, fields=fields, instance=obj_int)
 
             # Draw Instanced Objects
-
 
 
 

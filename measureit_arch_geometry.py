@@ -46,7 +46,7 @@ from .shaders import *
 from .measureit_arch_baseclass import TextField, recalc_dimWrapper_index
 from .measureit_arch_units import BU_TO_INCHES, format_distance, format_angle, \
     format_area
-from .measureit_arch_utils import get_rv3d, get_view, interpolate3d, get_camera_z_dist, get_camera_z, recursionlimit, OpenGL_Settings, get_sv3d
+from .measureit_arch_utils import get_rv3d, get_view, interpolate3d, get_camera_z_dist, get_camera_z, recursionlimit, OpenGL_Settings, get_sv3d, Inst_Sort
 
 lastMode = {}
 lineBatch3D = {}
@@ -117,7 +117,7 @@ def clear_batches():
     hiddenBatch3D.clear()
 
 
-def update_text(textobj, props, context, fields=[]):
+def update_text(textobj, props, context, fields=[], instance = None):
     scene = context.scene
     sceneProps = scene.MeasureItArchProps
 
@@ -129,7 +129,7 @@ def update_text(textobj, props, context, fields=[]):
         if textobj.text_updated or props.text_updated:
             textField.text_updated = True
 
-        if textField.text_updated or sceneProps.text_updated:
+        if textField.text_updated or sceneProps.text_updated or instance.is_instance:
             # Get textitem Properties
             rgb = rgb_gamma_correct(props.color)
             size = 20
@@ -192,18 +192,24 @@ def update_text(textobj, props, context, fields=[]):
                                      bgl.GL_UNSIGNED_BYTE, texture_buffer)
 
                     # Write Texture Buffer to ID Property as List
-                    if 'texture' in textField:
-                        del textField['texture']
-                    textField['texture'] = texture_buffer
+                    parent_name = ''
+                    if instance.is_instance:
+                        parent_name = instance.parent.name
+
+                    texture_tag = 'texture{}'.format(parent_name)
+                    if texture_tag in textField:
+                        del textField[texture_tag]
+                    
+                    textField[texture_tag] = texture_buffer
                     textField.text_updated = False
                     textField.texture_updated = True
 
                     # generate image datablock from buffer for debug preview
                     # ONLY USE FOR DEBUG. SERIOUSLY SLOWS PREFORMANCE
                     if sceneProps.measureit_arch_debug_text:
-                        if not str('test') in bpy.data.images:
-                            bpy.data.images.new(str('test'), width, height)
-                        image = bpy.data.images[str('test')]
+                        if not str(texture_tag) in bpy.data.images:
+                            bpy.data.images.new(str(texture_tag), width, height)
+                        image = bpy.data.images[str(texture_tag)]
                         image.scale(width, height)
                         image.pixels = [v / 255 for v in texture_buffer]
     textobj.text_updated = False
@@ -3338,17 +3344,6 @@ class Dist_Sort(object):
     def __eq__(self,other):
         return self.dist == other.dist
 
-class Inst_Sort(object):
-    object = None
-    matrix_world = None
-    is_instance = False
-    parent = None
-
-    def __init__(self, obj_int):
-        self.object = obj_int.object
-        self.matrix_world = obj_int.matrix_world.copy()
-        self.is_instance = obj_int.is_instance
-        self.parent = obj_int.parent
 
 def check_obj_vis(myobj,custom_call):
     scene = bpy.context.scene
@@ -3373,10 +3368,7 @@ def draw3d_loop(context, objlist, svg=None, extMat=None, multMat=False,custom_ca
         objlist = z_order_objs(objlist, extMat, multMat)
         print(objlist)
     
-    if sceneProps.is_render_draw:
-        startTime = time.time()
-
-    if sceneProps.is_render_draw:
+    if sceneProps.is_render_draw or True:
         startTime = time.time()
 
     # Draw Instanced Objects
@@ -3393,7 +3385,7 @@ def draw3d_loop(context, objlist, svg=None, extMat=None, multMat=False,custom_ca
             print("Rendering Object: " + str(idx) + " of: " +
             str(num_instances) + " Name: " + obj_int.object.name)
 
-        myobj = obj_int.object
+        myobj = obj_int.object.original
         mat = obj_int.matrix_world
         if True:#check_obj_vis(myobj,custom_call):
             if extMat is not None:

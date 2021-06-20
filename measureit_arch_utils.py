@@ -56,6 +56,20 @@ class Set_Render:
         self.sceneProps.is_render_draw = False
 
 
+class Inst_Sort(object):
+    object = None
+    matrix_world = None
+    is_instance = False
+    parent = None
+
+    def __init__(self, obj_int):
+        self.object = obj_int.object
+        self.matrix_world = obj_int.matrix_world.copy()
+        self.is_instance = obj_int.is_instance
+        self.parent = obj_int.parent
+
+
+
 class OpenGL_Settings:
     def __init__(self,props):
         self.props = props
