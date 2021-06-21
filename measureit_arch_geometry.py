@@ -129,7 +129,7 @@ def update_text(textobj, props, context, fields=[], instance = None):
         if textobj.text_updated or props.text_updated:
             textField.text_updated = True
 
-        if textField.text_updated or sceneProps.text_updated or instance.is_instance:
+        if textField.text_updated or sceneProps.text_updated or instance:
             # Get textitem Properties
             rgb = rgb_gamma_correct(props.color)
             size = 20
@@ -193,7 +193,7 @@ def update_text(textobj, props, context, fields=[], instance = None):
 
                     # Write Texture Buffer to ID Property as List
                     parent_name = ''
-                    if instance.is_instance:
+                    if instance and instance.is_instance:
                         parent_name = instance.parent.name
 
                     texture_tag = 'texture{}'.format(parent_name)
@@ -213,6 +213,7 @@ def update_text(textobj, props, context, fields=[], instance = None):
                         image.scale(width, height)
                         image.pixels = [v / 255 for v in texture_buffer]
     textobj.text_updated = False
+    
 
 
 def draw_sheet_views(context, myobj, sheetGen, sheet_view, mat, svg=None):
@@ -550,6 +551,10 @@ def draw_alignedDimension(context, myobj, measureGen, dim, mat=None, svg=None):
         # Filled Coords Call
         if len(filledCoords) != 0:
             draw_filled_coords(filledCoords, rgb)
+
+
+        update_text(textobj=dim,
+            props=dimProps, context=context)
 
         # Line Shader Calls
 
@@ -2221,14 +2226,14 @@ def get_style(item, type_str):
     
     return itemProps
 
-def draw_annotation(context, myobj, annotationGen, mat, svg=None, instance = None):
+def draw_annotations(context, myobj, annotationGen, mat, svg=None, instance = None):
     scene = context.scene
     sceneProps = scene.MeasureItArchProps
     customCoords = []
     customFilledCoords = []
     for annotation in annotationGen.annotations:
         annotationProps = get_style(annotation,"annotations")
-        
+        fields = annotation.textFields
 
         with OpenGL_Settings(annotationProps):
 
@@ -2449,6 +2454,9 @@ def draw_annotation(context, myobj, annotationGen, mat, svg=None, instance = Non
                     textcard = textField['textcard']
                     draw_text_3D(context, textField,
                                 annotationProps, myobj, textcard)
+
+            update_text(textobj=annotation, props=annotationProps,
+                context=context, fields=fields, instance=instance)
 
             if sceneProps.is_vector_draw:
                 svg_anno = svg.add(svg.g(id=annotation.name))
@@ -3385,7 +3393,7 @@ def draw3d_loop(context, objlist, svg=None, extMat=None, multMat=False,custom_ca
             print("Rendering Object: " + str(idx) + " of: " +
             str(num_instances) + " Name: " + obj_int.object.name)
 
-        myobj = obj_int.object.original
+        myobj = obj_int.object
         mat = obj_int.matrix_world
         if True:#check_obj_vis(myobj,custom_call):
             if extMat is not None:
@@ -3409,7 +3417,7 @@ def draw3d_loop(context, objlist, svg=None, extMat=None, multMat=False,custom_ca
 
             #DRAW ANNOTATIONS
             annotationGen = myobj.AnnotationGenerator
-            draw_annotation(context, myobj, annotationGen, mat, svg=svg, )
+            draw_annotations(context, myobj, annotationGen, mat, svg=svg, instance=obj_int )
 
             #DRAW DIMENSIONS
             if sceneProps.instance_dims or not obj_int.is_instance:

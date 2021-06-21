@@ -311,9 +311,9 @@ class ShowHideViewportButton(Operator):
 
     @staticmethod
     def handle_add(self, context):
-        if ShowHideViewportButton._handle is None:
-            ShowHideViewportButton._handle = SpaceView3D.draw_handler_add(
-                draw_main, (context,), 'WINDOW', 'POST_PIXEL')
+        if ShowHideViewportButton._handle3d is None:
+            #ShowHideViewportButton._handle = SpaceView3D.draw_handler_add(
+            #    draw_main, (context,), 'WINDOW', 'POST_PIXEL')
             ShowHideViewportButton._handle3d = SpaceView3D.draw_handler_add(
                 draw_main_3d, (context,), 'WINDOW', 'POST_VIEW')
             context.window_manager.measureit_arch_run_opengl = True
@@ -324,12 +324,12 @@ class ShowHideViewportButton(Operator):
     # noinspection PyUnusedLocal
     @staticmethod
     def handle_remove(self, context):
-        if ShowHideViewportButton._handle is not None:
-            SpaceView3D.draw_handler_remove(
-                ShowHideViewportButton._handle, 'WINDOW')
+        if ShowHideViewportButton._handle3d is not None:
+            #SpaceView3D.draw_handler_remove(
+            #    ShowHideViewportButton._handle, 'WINDOW')
             SpaceView3D.draw_handler_remove(
                 ShowHideViewportButton._handle3d, 'WINDOW')
-        ShowHideViewportButton._handle = None
+        ShowHideViewportButton._handle3d = None
         context.window_manager.measureit_arch_run_opengl = False
 
     # ------------------------------
@@ -354,7 +354,7 @@ class ShowHideViewportButton(Operator):
 
 def draw_main(context):
     """ Handle all 2D draw routines (Text Updating mostly) """
-
+    
     region = bpy.context.region
     # Detect if Quadview to get drawing area
     if context.space_data.region_quadviews:
@@ -384,13 +384,13 @@ def draw_main(context):
     # ---------------------------------------
     # Generate all OpenGL calls for measures
     # ---------------------------------------
-    text_update_loop(context, objlist)
+    #text_update_loop(context, objlist)
 
     view = get_view()
     if view is not None and view.titleBlock != "" and not sceneProps.hide_titleblock:
         titleblockScene = bpy.data.scenes[view.titleBlock]
         objlist = titleblockScene.objects
-        text_update_loop(context, objlist)
+        #text_update_loop(context, objlist)
 
     # Reset Style & Scene Update Flags
     StyleGen = context.scene.StyleGenerator
@@ -408,6 +408,7 @@ def draw_main(context):
 def text_update_loop(context, objlist):
     scene = bpy.context.scene
     sceneProps = scene.MeasureItArchProps
+
 
     deps = bpy.context.view_layer.depsgraph
     objlist = [Inst_Sort(obj_int) for obj_int in deps.object_instances]
@@ -493,15 +494,15 @@ def text_update_loop(context, objlist):
                     for textField in view.textFields:
                         fields.append(textField)
 
-                update_text(
-                    textobj=annotation, props=annotationProps,
-                    context=context, fields=fields, instance=obj_int)
+                
 
             # Draw Instanced Objects
 
 
 
 def draw_main_3d(context):
+
+    #print("drawing post view")
 
     scene = context.scene
     sceneProps = scene.MeasureItArchProps
@@ -563,7 +564,8 @@ def draw_titleblock(context, svg=None):
 # Handlers for drawing OpenGl
 # -------------------------------------------------------------
 def draw_callback_px(self, context):
-    draw_main(context)
+    pass
+    #draw_main(context)
 
 
 def draw_callback_3d(self, context):
