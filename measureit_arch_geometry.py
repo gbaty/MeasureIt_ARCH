@@ -165,8 +165,8 @@ def update_text(textobj, props, context, fields=[], instance = None):
             # Start Offscreen Draw
             if width != 0 and height != 0:
                 textOffscreen = gpu.types.GPUOffScreen(width, height)
-
-                with textOffscreen.bind():
+                textOffscreen.bind()
+                try:
                     # Clear Past Draw and Set 2D View matrix
                     bgl.glClearColor(rgb[0], rgb[1], rgb[2], 0)
                     bgl.glClear(bgl.GL_COLOR_BUFFER_BIT)
@@ -181,7 +181,7 @@ def update_text(textobj, props, context, fields=[], instance = None):
                     gpu.matrix.load_matrix(view_matrix)
                     gpu.matrix.load_projection_matrix(Matrix.Identity(4))
 
-                    blf.position(font_id, 0, height * 0.3, 0)
+                    blf.position(font_id, 0, height * 0.25, 0)
                     blf.draw(font_id, text)
 
                     # Read Offscreen To Texture Buffer
@@ -212,6 +212,14 @@ def update_text(textobj, props, context, fields=[], instance = None):
                         image = bpy.data.images[str(texture_tag)]
                         image.scale(width, height)
                         image.pixels = [v / 255 for v in texture_buffer]
+                except Exception:
+                    print('Exception in Text Update')
+                    pass
+                textOffscreen.unbind(restore=True)
+               
+                
+    
+    
     textobj.text_updated = False
     
 
@@ -2397,6 +2405,10 @@ def draw_annotations(context, myobj, annotationGen, mat, svg=None, instance = No
             # Set Gizmo Properties
             annotation.gizLoc = p2
 
+            update_text(textobj=annotation, props=annotationProps,
+                context=context, fields=fields)
+
+
             # Draw
             if p1 is not None and p2 is not None:
 
@@ -2455,8 +2467,7 @@ def draw_annotations(context, myobj, annotationGen, mat, svg=None, instance = No
                     draw_text_3D(context, textField,
                                 annotationProps, myobj, textcard)
 
-            update_text(textobj=annotation, props=annotationProps,
-                context=context, fields=fields, instance=instance)
+
 
             if sceneProps.is_vector_draw:
                 svg_anno = svg.add(svg.g(id=annotation.name))
@@ -2506,9 +2517,11 @@ def set_text(textField, obj, style=None, item=None):
         
         elif textField.textSource == 'ELEVATION':
             if item == None: 
-                textField.text = ""
+                text = ""
             elif "p1anchorCoord" in item:
-                textField.text = format_distance(item['p1anchorCoord'][2])
+                text = format_distance(item['p1anchorCoord'][2])
+            if textField.text != text:
+                textField.text = text
 
                 
         elif textField.textSource == 'C_LENGTH':
