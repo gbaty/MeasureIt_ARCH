@@ -389,7 +389,7 @@ def draw_main(context):
     view = get_view()
     if view is not None and view.titleBlock != "" and not sceneProps.hide_titleblock:
         titleblockScene = bpy.data.scenes[view.titleBlock]
-        objlist = titleblockScene.objects
+        objlist = context.view_layer.objects
         text_update_loop(context, objlist)
 
     # Reset Style & Scene Update Flags
@@ -616,7 +616,7 @@ def draw_titleblock(context, svg=None):
 
         titleblockScene = bpy.data.scenes[view.titleBlock]
 
-        objlist = titleblockScene.objects
+        objlist = context.view_layer.objects
 
         cameraMat = camera.matrix_world
         offsetVec = Vector((0, 0, -1.2))

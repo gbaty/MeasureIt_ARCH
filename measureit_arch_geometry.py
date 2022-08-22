@@ -323,7 +323,8 @@ def draw_material_hatches(context, myobj, mat, svg=None):
         if myobj.type == 'MESH':
             bm = bmesh.new()
             if myobj.mode == 'OBJECT':
-                bm.from_object(myobj, bpy.context.view_layer.depsgraph)
+                pass
+                #bm.from_object(myobj, bpy.context.view_layer.depsgraph)
             else:
                 bm = bmesh.from_edit_mesh(mesh)
 
@@ -3359,7 +3360,6 @@ def draw3d_loop(context, objlist, svg=None, extMat=None, multMat=False,custom_ca
     scene = context.scene
     sceneProps = scene.MeasureItArchProps
 
-    
     totalobjs = len(objlist)
 
     if sceneProps.is_vector_draw:
